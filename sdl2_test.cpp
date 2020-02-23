@@ -370,9 +370,25 @@ std::string render_flag_decode(Uint32 rend)
 }
 
 // --------------------------------------------------------------------------
+std::string data_path = "";
 
+#ifndef __EMSCRIPTEN__
+
+void InitializeDataPath() {
+    char *base_path = SDL_GetBasePath();
+    if (base_path) {
+        data_path = base_path;
+    } else {
+        data_path = SDL_strdup("./");
+    }
+}
+#endif
 
 int main(int argc, char *argv[]) {
+    
+#ifndef __EMSCRIPTEN__
+    InitializeDataPath();
+#endif
     
     SDL_version compiled;
     SDL_version linked;
@@ -445,9 +461,9 @@ int main(int argc, char *argv[]) {
 
     /*Returns a pointer to a new SDL_Surface structure or NULL if there was an error; call SDL_GetError() for more information. */
 #if ENABLE_FOX
-    SDL_Surface *bitmapSurface = SDL_LoadBMP("fox.bmp");
+    SDL_Surface *bitmapSurface = SDL_LoadBMP((data_path+"fox.bmp").c_str());
 #else
-    SDL_Surface *bitmapSurface = SDL_LoadBMP("icon.bmp");
+    SDL_Surface *bitmapSurface = SDL_LoadBMP((data_path+"icon.bmp").c_str();
 #endif
     if (bitmapSurface == NULL) {
         // In the case that the window could not be made...
