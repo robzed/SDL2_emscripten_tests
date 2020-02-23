@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+# Mac specific stuff
+.DS_Store
+
+# Emscripten output files
+*.js
+*.wasm
+*.data
+*.html

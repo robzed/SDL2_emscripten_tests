@@ -13,11 +13,13 @@
  
  Written by Rob Probin Sunday 16 Feb 2020.
  Some code modified from SDL2 demos written by Holmes Futrell "use however you want"
+Fox Icon, PD from https://www.deviantart.com/omegazero22xx/art/8-bit-Fox-Sheet-541702756
  */
 
 #include "SDL.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 
 #ifdef __EMSCRIPTEN__
 // Put this at the top to import emscripten_set_main_loop()
@@ -28,6 +30,8 @@ const int width = 800;
 const int height = 600;
 const int MAX_NUM_SPRITES = 1500;     /* number of faces to draw */
 const int SPRITE_SIZE = 32;      /* width and height of fox sprite */
+
+#define USE_BROWSER_VYSNC 1     // if zero, callback tries to be expected_framerate
 
 const int expected_framerate = 60;
 const int frames_per_print_framerate = 2*expected_framerate;
@@ -271,6 +275,7 @@ void sprite_test()
             faces[i].y = miny;
             faces[i].yvel = -faces[i].yvel;
         }
+
         dstRect.x = faces[i].x;
         dstRect.y = faces[i].y;
         SDL_RenderCopy(renderer, bitmapTex, &srcRect, &dstRect);
@@ -337,15 +342,75 @@ void one_iter() {
 
 }
 
+// ---------------------------------------------------------------------------
+std::string render_flag_decode(Uint32 rend)
+{
+    std::string s = "";
+    if(rend & SDL_RENDERER_SOFTWARE)
+    {
+        s += "SOFTWARE ";
+    }
+    if(rend & SDL_RENDERER_ACCELERATED)
+    {
+        s += "ACCELERATED ";
+    }
+    if(rend & SDL_RENDERER_PRESENTVSYNC)
+    {
+        s += "PRESENTVSYNC ";
+    }
+    if(rend & SDL_RENDERER_TARGETTEXTURE)
+    {
+        s += "TARGETTEXTURE ";
+    }
+    if(rend & ~(SDL_RENDERER_TARGETTEXTURE + SDL_RENDERER_PRESENTVSYNC + SDL_RENDERER_ACCELERATED + SDL_RENDERER_SOFTWARE))
+    {
+        s += "UNKNOWN-FLAGS";
+    }
+    return s;
+}
+
 // --------------------------------------------------------------------------
 
 
 int main(int argc, char *argv[]) {
+    
+    SDL_version compiled;
+    SDL_version linked;
+
+    SDL_VERSION(&compiled);
+    SDL_GetVersion(&linked);
+    printf("We compiled against SDL version %d.%d.%d ...\n",
+           compiled.major, compiled.minor, compiled.patch);
+    printf("But we are linking against SDL version %d.%d.%d.\n",
+           linked.major, linked.minor, linked.patch);
+
     int posX = SDL_WINDOWPOS_UNDEFINED;
     int posY = SDL_WINDOWPOS_UNDEFINED;
 
     SDL_Init(SDL_INIT_VIDEO);
 
+    // ---------
+#if 1
+    struct SDL_RendererInfo renderer_info;
+    int num_r = SDL_GetNumRenderDrivers();
+    printf("Number of renderers = %i\n", num_r);
+    //int current_renderer = gulp_cpp.RendererInfo(gulp.app:get_SDL_renderer(), 0)
+    //printf("Current Renderer: %s (%s)", current_renderer.name, render_flag_decode(current_renderer)) )
+    for(int i = 0; i < num_r; i++)
+    {
+        int err = SDL_GetRenderDriverInfo(i, &renderer_info);
+        if(err)
+        {
+            printf("Renderer %i: <ERROR> %s\n", i, SDL_GetError());
+        }
+        else
+        {
+            printf("Renderer %i: %s %s\n", i, renderer_info.name, render_flag_decode(renderer_info.flags).c_str());
+        }
+    }
+#endif
+    // --------
+                
     SDL_Window *window = SDL_CreateWindow("Hello World", posX, posY, width, height, 0);
     // Check that the window was successfully created
     if (window == NULL) {
@@ -367,6 +432,15 @@ int main(int argc, char *argv[]) {
         // In the case that the window could not be made...
         printf("Could not create renderer: %s\n", SDL_GetError());
         return 1;
+    }
+    int err = SDL_GetRendererInfo(renderer, &renderer_info);
+    if(err)
+    {
+        printf("Current Renderer: <ERROR> %s\n", SDL_GetError());
+    }
+    else
+    {
+        printf("Current Renderer: %s %s\n", renderer_info.name, render_flag_decode(renderer_info.flags).c_str());
     }
 
     /*Returns a pointer to a new SDL_Surface structure or NULL if there was an error; call SDL_GetError() for more information. */
@@ -450,12 +524,16 @@ int main(int argc, char *argv[]) {
     // https://emscripten.org/docs/porting/emscripten-runtime-environment.html
     #ifdef __EMSCRIPTEN__
           // void emscripten_set_main_loop(em_callback_func func, int fps, int simulate_infinite_loop);
-          emscripten_set_main_loop(one_iter, expected_framerate, 1);
+#if USE_BROWSER_VYSNC
+            emscripten_set_main_loop(one_iter, 0, 1);
+#else
+            emscripten_set_main_loop(one_iter, expected_framerate, 1);
+#endif
     #else
           while (1) {
                 one_iter();
                 // Delay to keep frame rate constant (using SDL)
-                SDL_Delay(time_to_next_frame());
+                //SDL_Delay(time_to_next_frame());
           }
     #endif
     
