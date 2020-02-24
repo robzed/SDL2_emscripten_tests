@@ -16,6 +16,8 @@
 Fox Icon, PD from https://www.deviantart.com/omegazero22xx/art/8-bit-Fox-Sheet-541702756
  */
 
+const START_VALUE = 100; //1500;
+
 #include "SDL.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,7 +38,7 @@ const int SPRITE_SIZE = 32;      /* width and height of fox sprite */
 const int expected_framerate = 60;
 const int frames_per_print_framerate = 2*expected_framerate;
 
-int num_sprites = 100;          // start value, should be <= MAX_NUM_SPRITES
+int num_sprites = START_VALUE;          // start value, should be <= MAX_NUM_SPRITES
 int num_rects = 0;
 int fixed_width_rect = true;   // leave this true and it automatically switches it off
 
@@ -100,7 +102,7 @@ void calc_framerate(double dt)
                 if(num_sprites > MAX_NUM_SPRITES)
                 {
                     num_sprites = 0;
-                    num_rects = 100;
+                    num_rects = START_VALUE;
                     fixed_width_rect = true;
                     printf("Switch to fixed width rects\n");
                 }
@@ -113,13 +115,13 @@ void calc_framerate(double dt)
                     if(fixed_width_rect)
                     {
                         num_sprites = 0;
-                        num_rects = 100;
+                        num_rects = START_VALUE;
                         fixed_width_rect = false;
                         printf("Switch to variable rects\n");
                     }
                     else
                     {
-                        num_sprites = 100;
+                        num_sprites = START_VALUE;
                         num_rects = 0;
                         fixed_width_rect = true;
                         printf("Switch to sprites\n");
@@ -403,7 +405,7 @@ int main(int argc, char *argv[]) {
     int posX = SDL_WINDOWPOS_UNDEFINED;
     int posY = SDL_WINDOWPOS_UNDEFINED;
 
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_EVERYTHING);
 
     // ---------
 #if 1
